@@ -1,4 +1,4 @@
-//
+//  TODO: Add another init method which supports updating the gradings
 //  PastelDetailForm.swift
 //  PastelMuseum
 //
@@ -7,7 +7,21 @@
 
 import UIKit
 
-class PastelDetailViewController: UIViewController, PastelFormViewControllerDelegate {
+//protocol SubviewDelegate : AnyObject {
+//    func subviewWillClose()
+//}
+
+// attach the delegate
+//    weak var delegate: SubviewDelegate?
+
+//    override func viewWillDisappear(_ animated: Bool) {
+//        super.viewWillDisappear(animated)
+//        delegate?.subviewWillClose()
+//    }
+
+class PastelDetailViewController: UIViewController, PastelEditViewControllerDelegate {
+    
+    // MARK: Protocol-delegate - detail view creates the form to be conformed to by the edit view
     func pastelSwatchEditDidSave(color: String, brand: PastelBrand, colorSwatch: (Int, Int, Int)) {
         item.color = color
         item.brand = brand
@@ -156,8 +170,9 @@ class PastelDetailViewController: UIViewController, PastelFormViewControllerDele
     
     // Pastel(color: "Viridian Green", brand: .sennelier, id: 021, dateAcquired: Date(), colorSwatch: (0, 103, 80))
     
+    // Mark: Protocol-delegate - edit view declares itself as a reporter which follows through the protocol
     @objc private func editTapped() {
-        let editVC = PastelFormViewController(item: item)
+        let editVC = PastelEditViewController(item: item)
         editVC.delegate = self
         let navController = UINavigationController(rootViewController: editVC)
         present(navController, animated: true)

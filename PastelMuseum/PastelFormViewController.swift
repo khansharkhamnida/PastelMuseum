@@ -1,21 +1,20 @@
-//
+//  
 //  PastelFormViewController.swift
 //  PastelMuseum
 //
-//  Created by Dian Maisara on 18/10/26.
+//  Created by Dian Maisara on 20/10/26.
 //
 
 import UIKit
 
 protocol PastelFormViewControllerDelegate: AnyObject {
     // function gets called when Done button is tapped by user
-    func pastelSwatchEditDidSave(color: String, brand: PastelBrand, colorSwatch: (Int, Int, Int)) // TODO: Add photo
+    func pastelSwatchAddDidSave(item: Pastel)
 }
-
-// Pastel(color: "Viridian Green", brand: .sennelier, id: 021, dateAcquired: Date(), colorSwatch: (0, 103, 80))
 
 class PastelFormViewController: UIViewController, UINavigationControllerDelegate {
     
+    // attach the delegate
     weak var delegate: PastelFormViewControllerDelegate?
     
     var item: Pastel?
@@ -27,9 +26,8 @@ class PastelFormViewController: UIViewController, UINavigationControllerDelegate
     private let colorWell = UIColorWell()
     private var selectedBrand: PastelBrand = .unknownBrand
     
-    // same pattern as PastelDetailViewController, pass in  Pastel being edited
-    init(item: Pastel?) {
-        self.item = item
+    init() {
+        self.item = Pastel() // MARK: Initialise an empty item
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -40,7 +38,7 @@ class PastelFormViewController: UIViewController, UINavigationControllerDelegate
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBrown
-        title = "Edit Swatch"
+        title = "Add New Oil Pastel"
         
         navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
         navigationController?.navigationBar.tintColor = .white
@@ -60,10 +58,6 @@ class PastelFormViewController: UIViewController, UINavigationControllerDelegate
     }
     
     private func setupElements() {
-        // set field values from pastel being edited
-        selectedBrand = item?.brand ?? .unknownBrand
-        
-        nameField.text = item?.color
         nameField.placeholder = "Color name"
         nameField.borderStyle = .roundedRect
         nameField.backgroundColor = .white
@@ -85,7 +79,7 @@ class PastelFormViewController: UIViewController, UINavigationControllerDelegate
         // color well = color picker
         colorWell.title = "Swatch color"
         colorWell.supportsAlpha = false
-        colorWell.selectedColor = item?.swatchUIColor ?? .systemGray4 // in case...
+        colorWell.selectedColor = .systemGray4 // TODO: Set defaults in another file
         colorWell.addTarget(self, action: #selector(colorChanged), for: .valueChanged)
         colorWell.translatesAutoresizingMaskIntoConstraints = false
         
@@ -140,6 +134,8 @@ class PastelFormViewController: UIViewController, UINavigationControllerDelegate
             UIAction(title: brand.rawValue, state: brand == selectedBrand ? .on : .off) { [weak self] _ in
                 self?.selectedBrand = brand
                 self?.updateBrandMenu()
+                // TODO: Check if the color brand is updated in item too
+                self?.item?.brand = brand
             }
         }
         brandButton.menu = UIMenu(children: actions)
@@ -178,8 +174,16 @@ class PastelFormViewController: UIViewController, UINavigationControllerDelegate
             return
         }
         
+        // TODO: Find a better way to update and add the colors of the app...
         let swatch = rgbTuple(from: colorWell.selectedColor ?? .systemGray4)
-        delegate?.pastelSwatchEditDidSave(color: name, brand: selectedBrand, colorSwatch: swatch) // TODO: Edit the ID and stuff
+        item?.colorSwatch = swatch
+        item?.color = nameField.text ?? "Default"
+
+        if let pastel = item {
+            delegate?.pastelSwatchAddDidSave(item: pastel)
+        } else {
+            print("Hello")
+        }
         dismiss(animated: true)
     }
 }

@@ -7,14 +7,21 @@
 
 import UIKit
 
-class ListViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+class ListViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, PastelFormViewControllerDelegate { // SubviewDelegate
     
     private let tableView = UITableView()
     
-    private let pastelsDisplay = [
+    // TODO: previously let but remove this comment if it works
+    private var pastelsDisplay = [
         Pastel(color: "Jazzberry Jam", brand: .mungyo, id: 276, dateAcquired: Date(), colorSwatch: (198, 1, 49)),
         Pastel(color: "Viridian Green", brand: .sennelier, id: 021, dateAcquired: Date(), colorSwatch: (0, 103, 80))
     ]
+    
+    // function defined in the subview delegate
+    func pastelSwatchAddDidSave(item: Pastel) {
+        pastelsDisplay.append(item)
+        tableView.reloadData()
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -22,8 +29,21 @@ class ListViewController: UIViewController, UITableViewDelegate, UITableViewData
         title = "Pastel Museum 🎨"
 
         self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
+        
+        let addButton = UIBarButtonItem(
+            barButtonSystemItem: .add,
+            target: self,
+            action: #selector(addTapped)
+        )
+        navigationItem.rightBarButtonItem = addButton
 
         setupTableView()
+    }
+    
+    // refresh/redraw the table (fixes the bug of stale data in table!)
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tableView.reloadData()
     }
     
     func setupTableView() {
@@ -74,6 +94,21 @@ class ListViewController: UIViewController, UITableViewDelegate, UITableViewData
         tableView.deselectRow(at: indexPath, animated: true)
         let detailVC = PastelDetailViewController(item: pastelsDisplay[indexPath.row])
         navigationController?.pushViewController(detailVC, animated: true)
+    }
+    
+    // free delete swipe feature - TODO: Push the elements to fill the remaining card space instead of hiding under the view (looks cut off and weird)
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            pastelsDisplay.remove(at: indexPath.row)
+            tableView.deleteRows(at: [indexPath], with: .fade)
+        }
+    }
+    
+    @objc private func addTapped(){
+        let addVC = PastelFormViewController()
+        addVC.delegate = self // so its not nil
+        let navController = UINavigationController(rootViewController: addVC)
+        present(navController, animated: true)
     }
     
 }

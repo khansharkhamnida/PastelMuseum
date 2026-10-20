@@ -18,7 +18,7 @@ enum PastelBrand: String, CaseIterable {
 class Pastel {
     var color: String
     var brand: PastelBrand
-    var id: Int
+    var id: Int 
     var dateAcquired: Date
     var colorSwatch: (Int, Int, Int)
     var hardnessGrading: Int?
@@ -31,7 +31,7 @@ class Pastel {
     
     // photo to be uploaded
     // colorSwatch defaults to nil so your existing Pastel(...) calls still work
-    init(color: String, brand: PastelBrand, id: Int, dateAcquired: Date, colorSwatch: (Int, Int, Int)) {
+    init(color: String = "None", brand: PastelBrand = .unknownBrand, id: Int = -1, dateAcquired: Date = Date.distantFuture, colorSwatch: (Int, Int, Int) = (-1, -1, -1)) {
         self.color = color
         self.brand = brand
         self.id = id
