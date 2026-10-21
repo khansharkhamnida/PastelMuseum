@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		7B804C243085175400467180 /* PastelMuseum.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PastelMuseum.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7BA31E1E308874EE0038C666 /* PastelMuseum.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PastelMuseum.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -46,16 +46,8 @@
 			isa = PBXGroup;
 			children = (
 				7B804C263085175400467180 /* PastelMuseum */,
-				7B804C253085175400467180 /* Products */,
+				7BA31E1E308874EE0038C666 /* PastelMuseum.app */,
 			);
-			sourceTree = "<group>";
-		};
-		7B804C253085175400467180 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				7B804C243085175400467180 /* PastelMuseum.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -80,7 +72,7 @@
 			packageProductDependencies = (
 			);
 			productName = PastelMuseum;
-			productReference = 7B804C243085175400467180 /* PastelMuseum.app */;
+			productReference = 7BA31E1E308874EE0038C666 /* PastelMuseum.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -108,7 +100,7 @@
 			mainGroup = 7B804C1B3085175400467180;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 7B804C253085175400467180 /* Products */;
+			productRefGroup = 7B804C1B3085175400467180;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (

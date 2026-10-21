@@ -1,42 +1,23 @@
-//  TODO: Add another init method which supports updating the gradings
-//  PastelDetailForm.swift
-//  PastelMuseum
-//
-//  Created by Dian Maisara on 18/10/26.
-//
-
 import UIKit
-
-//protocol SubviewDelegate : AnyObject {
-//    func subviewWillClose()
-//}
-
-// attach the delegate
-//    weak var delegate: SubviewDelegate?
-
-//    override func viewWillDisappear(_ animated: Bool) {
-//        super.viewWillDisappear(animated)
-//        delegate?.subviewWillClose()
-//    }
 
 class PastelDetailViewController: UIViewController, PastelEditViewControllerDelegate {
     
     // MARK: Protocol-delegate - detail view creates the form to be conformed to by the edit view
-    func pastelSwatchEditDidSave(color: String, brand: PastelBrand, colorSwatch: (Int, Int, Int)) {
+    func pastelSwatchEditDidSave(color: String, brand: PastelBrand, id: Int, dateAcquired: Date, colorSwatch: (Int, Int, Int)) {
         item.color = color
         item.brand = brand
+        item.id = id
+        item.dateAcquired = dateAcquired
         item.colorSwatch = colorSwatch
-        
-        // refresh details
-        nameLabel.text = item.color
-        brandLabel.text = item.brand.rawValue
-        rgbLabel.text = "RGB \(colorSwatch.0) · \(colorSwatch.1) · \(colorSwatch.2)"
-        swatchView.backgroundColor = item.swatchUIColor
+        refreshContent()
     }
     
     var item: Pastel = Pastel(color: "Default", brand: .unknownBrand, id: -1, dateAcquired: Date.now, colorSwatch: (-1, -1, -1))
-    
-    // the white swatch card, like Pantone!
+    private let isOwnedPastel: Bool
+    private let store = PastelStore.shared
+
+    private let scrollView = UIScrollView()
+
     private let cardView = UIView()
     private let swatchView = UIView()
     private let stackView = UIStackView()
@@ -49,8 +30,13 @@ class PastelDetailViewController: UIViewController, PastelEditViewControllerDele
     private let rgbLabel = UILabel()
     private let dateAcquiredLabel = UILabel()
     
+    private let galleryCaption = UILabel()
+    private let galleryScroll = UIScrollView()
+    private let galleryStack = UIStackView()
+    
     init(item: Pastel) {
         self.item = item
+        self.isOwnedPastel = PastelStore.shared.pastels.contains { $0 === item }
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -62,36 +48,42 @@ class PastelDetailViewController: UIViewController, PastelEditViewControllerDele
         super.viewDidLoad()
         view.backgroundColor = .systemBrown
         title = "Oil Pastel Details"
-        
-        let editButton = UIBarButtonItem(
-            barButtonSystemItem: .edit,
-            target: self,
-            action: #selector(editTapped)
-        )
-        navigationItem.rightBarButtonItem = editButton
-        
+
+        if isOwnedPastel {
+            navigationItem.rightBarButtonItem = UIBarButtonItem(
+                barButtonSystemItem: .edit,
+                target: self,
+                action: #selector(editTapped)
+            )
+        } else {
+            navigationItem.rightBarButtonItem = UIBarButtonItem(
+                barButtonSystemItem: .add,
+                target: self,
+                action: #selector(addToMyPastelsTapped)
+            )
+        }
+
         setupElements()
         setupLayout()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        refreshContent()
+    }
+    
     private func setupElements() {
-        museumLabel.text = "PASTEL MUSEUM"
-        nameLabel.text = item.color
-        idLabel.text = "No. \(item.id)"
-        brandLabel.text = item.brand.rawValue
-        dateAcquiredLabel.text = "Acquired \(item.dateAcquired.formatted(date: .abbreviated, time: .omitted))"
-//        editSwatchButton.setTitle("Edit swatch details", for: .normal)
-        
-       
-        rgbLabel.text = "RGB \(item.colorSwatch.0) · \(item.colorSwatch.1) · \(item.colorSwatch.2)"
-//        } else {
-//            rgbLabel.text = "RGB not recorded" // default fallback in case...
-//        }
-        
         museumLabel.font = UIFont.systemFont(ofSize: 11, weight: .semibold)
         museumLabel.textColor = .gray
         museumLabel.attributedText = NSAttributedString(
             string: "PASTEL MUSEUM",
+            attributes: [.kern: 2.0]
+        )
+        
+        galleryCaption.font = UIFont.systemFont(ofSize: 11, weight: .semibold)
+        galleryCaption.textColor = .gray
+        galleryCaption.attributedText = NSAttributedString(
+            string: "WORKS WITH THIS SHADE",
             attributes: [.kern: 2.0]
         )
         
@@ -108,8 +100,7 @@ class PastelDetailViewController: UIViewController, PastelEditViewControllerDele
         dateAcquiredLabel.textColor = .darkGray
         
         nameLabel.numberOfLines = 0
-        
-        // card + swatch block
+
         cardView.backgroundColor = .white
         cardView.layer.cornerRadius = 4
         cardView.layer.shadowColor = UIColor.black.cgColor
@@ -118,7 +109,6 @@ class PastelDetailViewController: UIViewController, PastelEditViewControllerDele
         cardView.layer.shadowRadius = 6
         cardView.translatesAutoresizingMaskIntoConstraints = false
         
-        swatchView.backgroundColor = item.swatchUIColor
         swatchView.layer.cornerRadius = 4
         swatchView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         swatchView.translatesAutoresizingMaskIntoConstraints = false
@@ -131,7 +121,16 @@ class PastelDetailViewController: UIViewController, PastelEditViewControllerDele
         stackView.spacing = 6
         stackView.translatesAutoresizingMaskIntoConstraints = false
         
-        view.addSubview(cardView)
+        galleryStack.axis = .horizontal
+        galleryStack.spacing = 8
+        galleryStack.translatesAutoresizingMaskIntoConstraints = false
+        galleryScroll.showsHorizontalScrollIndicator = false
+        galleryScroll.translatesAutoresizingMaskIntoConstraints = false
+        galleryScroll.addSubview(galleryStack)
+        
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scrollView)
+        scrollView.addSubview(cardView)
         cardView.addSubview(swatchView)
         cardView.addSubview(stackView)
         
@@ -142,16 +141,29 @@ class PastelDetailViewController: UIViewController, PastelEditViewControllerDele
         stackView.addArrangedSubview(brandLabel)
         stackView.addArrangedSubview(rgbLabel)
         stackView.addArrangedSubview(dateAcquiredLabel)
+        stackView.addArrangedSubview(galleryCaption)
+        stackView.addArrangedSubview(galleryScroll)
         
         stackView.setCustomSpacing(12, after: nameLabel)
         stackView.setCustomSpacing(12, after: dividerView)
+        stackView.setCustomSpacing(20, after: dateAcquiredLabel)
+        
+        refreshContent()
     }
     
     private func setupLayout() {
+        let content = scrollView.contentLayoutGuide
         NSLayoutConstraint.activate([
-            cardView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 24),
-            cardView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 30),
-            cardView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -30),
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            
+            cardView.topAnchor.constraint(equalTo: content.topAnchor, constant: 24),
+            cardView.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 30),
+            cardView.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -30),
+            cardView.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -24),
+            cardView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -60),
             
             swatchView.topAnchor.constraint(equalTo: cardView.topAnchor),
             swatchView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
@@ -163,18 +175,77 @@ class PastelDetailViewController: UIViewController, PastelEditViewControllerDele
             stackView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
             stackView.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -20),
             
-            dividerView.heightAnchor.constraint(equalToConstant: 1), // so its super thin
-            dividerView.widthAnchor.constraint(equalTo: stackView.widthAnchor) // cut across the whole stack
+            dividerView.heightAnchor.constraint(equalToConstant: 1),
+            dividerView.widthAnchor.constraint(equalTo: stackView.widthAnchor),
+            
+            galleryScroll.widthAnchor.constraint(equalTo: stackView.widthAnchor),
+            galleryScroll.heightAnchor.constraint(equalToConstant: 96),
+            galleryStack.topAnchor.constraint(equalTo: galleryScroll.contentLayoutGuide.topAnchor),
+            galleryStack.bottomAnchor.constraint(equalTo: galleryScroll.contentLayoutGuide.bottomAnchor),
+            galleryStack.leadingAnchor.constraint(equalTo: galleryScroll.contentLayoutGuide.leadingAnchor),
+            galleryStack.trailingAnchor.constraint(equalTo: galleryScroll.contentLayoutGuide.trailingAnchor),
+            galleryStack.heightAnchor.constraint(equalTo: galleryScroll.frameLayoutGuide.heightAnchor)
         ])
     }
     
-    // Pastel(color: "Viridian Green", brand: .sennelier, id: 021, dateAcquired: Date(), colorSwatch: (0, 103, 80))
+    private var galleryImages: [UIImage] {
+        PastelStore.shared.artworks(using: item).compactMap { $0.image }
+    }
+
+    private func refreshContent() {
+        nameLabel.text = item.color
+        idLabel.text = "No. \(item.id)"
+        brandLabel.text = item.brand.rawValue
+        dateAcquiredLabel.text = "Acquired \(item.dateAcquired.formatted(date: .abbreviated, time: .omitted))"
+        rgbLabel.text = "RGB \(item.colorSwatch.0) · \(item.colorSwatch.1) · \(item.colorSwatch.2)"
+        swatchView.backgroundColor = item.swatchUIColor
+        
+        galleryStack.arrangedSubviews.forEach {
+            galleryStack.removeArrangedSubview($0)
+            $0.removeFromSuperview()
+        }
+        
+        let images = galleryImages
+        for image in images {
+            let imageView = UIImageView(image: image)
+            imageView.contentMode = .scaleAspectFill
+            imageView.clipsToBounds = true
+            imageView.layer.cornerRadius = 4
+            imageView.translatesAutoresizingMaskIntoConstraints = false
+            imageView.widthAnchor.constraint(equalToConstant: 96).isActive = true
+            galleryStack.addArrangedSubview(imageView)
+        }
+        galleryCaption.isHidden = images.isEmpty
+        galleryScroll.isHidden = images.isEmpty
+    }
     
-    // Mark: Protocol-delegate - edit view declares itself as a reporter which follows through the protocol
+    // MARK: Protocol-delegate - edit view declares itself as a reporter which follows through the protocol
     @objc private func editTapped() {
         let editVC = PastelEditViewController(item: item)
         editVC.delegate = self
         let navController = UINavigationController(rootViewController: editVC)
         present(navController, animated: true)
+    }
+
+    @objc private func addToMyPastelsTapped() {
+        guard !store.pastels.contains(where: { $0.id == item.id }) else {
+            let alert = UIAlertController(title: "Already Added", message: "\"\(item.color)\" is already in My Pastels.", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+            return
+        }
+
+        let copy = Pastel(
+            color: item.color,
+            brand: item.brand,
+            id: item.id,
+            dateAcquired: Date(),
+            colorSwatch: item.colorSwatch
+        )
+        store.pastels.append(copy)
+
+        let alert = UIAlertController(title: "Added", message: "\"\(item.color)\" was added to My Pastels.", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 }

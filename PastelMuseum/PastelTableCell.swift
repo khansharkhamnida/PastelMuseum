@@ -1,21 +1,11 @@
-//
-//  PastelTableCell.swift
-//  PastelMuseum
-//
-//  Created by Dian Maisara on 18/10/26.
-//
-
 import UIKit
 
 class PastelTableCell: UITableViewCell {
     
-    // cell's ID used later so table can reuse cells
     static let identifier = "PastelTableCell"
-    
-    // property to take in the item which is our Pastel(s)
+
     var item: Pastel = Pastel(color: "Default", brand: .unknownBrand, id: -1, dateAcquired: Date.now, colorSwatch: (-1, -1, -1))
-    
-    // the white "chip" that holds everything
+
     private let cardView: UIView = {
         let view = UIView()
         view.backgroundColor = .white
@@ -28,7 +18,6 @@ class PastelTableCell: UITableViewCell {
         return view
     }()
     
-    // color swatch on top
     private let swatchView: UIView = {
         let view = UIView()
         view.layer.cornerRadius = 4
@@ -70,11 +59,10 @@ class PastelTableCell: UITableViewCell {
         selectionStyle = .none
         
         contentView.addSubview(cardView)
-        cardView.addSubview(swatchView) // the color block
-        cardView.addSubview(pastelTitleLabel) // the title
-        cardView.addSubview(pastelDescriptionLabel) // the extra info stuff
-        
-        // just setup layout here directly
+        cardView.addSubview(swatchView)
+        cardView.addSubview(pastelTitleLabel)
+        cardView.addSubview(pastelDescriptionLabel)
+
         NSLayoutConstraint.activate([
             cardView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
             cardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
@@ -97,7 +85,6 @@ class PastelTableCell: UITableViewCell {
         ])
     }
     
-    // what cell.configure does in the tableview function
     func configure(with item: Pastel) {
         self.item = item
         swatchView.backgroundColor = item.swatchUIColor
