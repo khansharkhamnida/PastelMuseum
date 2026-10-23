@@ -1,11 +1,7 @@
 import UIKit
 
 protocol PastelEditViewControllerDelegate: AnyObject {
-    func pastelSwatchEditDidSave(color: String,
-                                 brand: PastelBrand,
-                                 id: Int,
-                                 dateAcquired: Date,
-                                 colorSwatch: (Int, Int, Int))
+    func pastelSwatchEditDidSave(_ pastel: Pastel)
 }
 
 class PastelEditViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate {
@@ -13,7 +9,7 @@ class PastelEditViewController: UIViewController, UITableViewDelegate, UITableVi
     weak var delegate: PastelEditViewControllerDelegate?
 
     var item: Pastel?
-    private let allPastels: [Pastel]
+    private var allPastels: [Pastel]
 
     private enum Section: Int, CaseIterable {
         case swatch, details
@@ -30,7 +26,7 @@ class PastelEditViewController: UIViewController, UITableViewDelegate, UITableVi
     private let previewView = UIView()
     private var colorWell: UIColorWell { colorCell.colorWell }
     private var nameField: UITextField { nameCell.textField }
-    private var idField: UITextField { idCell.textField }
+    private var colorIDField: UITextField { colorIDCell.textField }
     private var brandButton: UIButton { brandCell.brandButton }
     private var datePicker: UIDatePicker { dateCell.datePicker }
 
@@ -52,7 +48,7 @@ class PastelEditViewController: UIViewController, UITableViewDelegate, UITableVi
         cell.configure(title: "Brand")
         return cell
     }()
-    private lazy var idCell: TextFieldRowCell = {
+    private lazy var colorIDCell: TextFieldRowCell = {
         let cell = TextFieldRowCell()
         cell.configure(title: "ID No.")
         return cell
@@ -106,11 +102,11 @@ class PastelEditViewController: UIViewController, UITableViewDelegate, UITableVi
         nameField.returnKeyType = .done
         nameField.delegate = self
         
-        idField.text = String(item?.id ?? ((allPastels.map(\.id).max() ?? 0) + 1))
-        idField.placeholder = "e.g. 276"
-        idField.textAlignment = .right
-        idField.keyboardType = .numberPad
-        idField.delegate = self
+        colorIDField.text = String(item?.colorID ?? ((allPastels.map(\.colorID).max() ?? 0) + 1))
+        colorIDField.placeholder = "e.g. 276"
+        colorIDField.textAlignment = .right
+        colorIDField.keyboardType = .numberPad
+        colorIDField.delegate = self
         
         var buttonConfig = UIButton.Configuration.plain()
         buttonConfig.baseForegroundColor = .label
@@ -185,8 +181,9 @@ class PastelEditViewController: UIViewController, UITableViewDelegate, UITableVi
         switch Section(rawValue: indexPath.section)! {
         case .swatch:
             return indexPath.row == 0 ? previewCell : colorCell
+            //return colorCell
         case .details:
-            return [nameCell, brandCell, idCell, dateCell][indexPath.row]
+            return [nameCell, brandCell, colorIDCell, dateCell][indexPath.row]
         }
     }
     
@@ -259,38 +256,66 @@ class PastelEditViewController: UIViewController, UITableViewDelegate, UITableVi
     @objc private func cancelTapped() {
         dismiss(animated: true)
     }
-    
+
     @objc private func doneTapped() {
-        let name = nameField.text?.trimmingCharacters(in: .whitespaces) ?? ""
+        let name = nameField.text?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
         guard !name.isEmpty else {
             flag(nameField)
             return
         }
-        
-        guard let id = Int((idField.text ?? "").trimmingCharacters(in: .whitespaces)) else {
-            flag(idField)
+
+        guard let id = Int(
+            (colorIDField.text ?? "").trimmingCharacters(in: .whitespaces)
+        ) else {
+            flag(colorIDField)
             return
         }
-        
-        if allPastels.contains(where: { $0.id == id && $0 !== item }) {
+
+        // Prevent duplicate IDs belonging to another pastel.
+        if allPastels.contains(where: {
+            $0.colorID == id && $0.id != item?.id
+        }) {
             let alert = UIAlertController(
                 title: "ID already in use",
                 message: "Another pastel is already numbered \(id). Pick a different number.",
                 preferredStyle: .alert
             )
-            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            alert.addAction(
+                UIAlertAction(title: "OK", style: .default)
+            )
             present(alert, animated: true)
             return
         }
-        
-        let swatch = rgbTuple(from: colorWell.selectedColor ?? .systemGray4)
-        delegate?.pastelSwatchEditDidSave(
-            color: name,
-            brand: selectedBrand,
-            id: id,
-            dateAcquired: datePicker.date,
-            colorSwatch: swatch
+
+        let swatch = rgbTuple(
+            from: colorWell.selectedColor ?? .systemGray4
         )
+
+        var updatedPastel: Pastel
+
+        if var existing = item {
+            // Editing: preserve the existing ID.
+            existing.color = name
+            existing.brand = selectedBrand
+            existing.colorID = id
+            existing.dateAcquired = datePicker.date
+            existing.colorSwatch = swatch
+
+            updatedPastel = existing
+        } else {
+            // Adding: create a new pastel.
+            updatedPastel = Pastel(
+                color: name,
+                brand: selectedBrand,
+                colorID: id,
+                dateAcquired: datePicker.date,
+                colorSwatch: swatch
+            )
+        }
+
+        delegate?.pastelSwatchEditDidSave(updatedPastel)
         dismiss(animated: true)
     }
 }

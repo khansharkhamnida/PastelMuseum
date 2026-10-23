@@ -1,19 +1,17 @@
 import UIKit
 
+protocol PastelDetailViewControllerDelegate: AnyObject {
+    func pastelDetailDidSave(_ pastel: Pastel)
+}
+
 class PastelDetailViewController: UIViewController, PastelEditViewControllerDelegate {
 
-    // MARK: - Update (called by the Edit form)
-    func pastelSwatchEditDidSave(color: String, brand: PastelBrand, id: Int, dateAcquired: Date, colorSwatch: (Int, Int, Int)) {
-        item.color = color
-        item.brand = brand
-        item.id = id
-        item.dateAcquired = dateAcquired
-        item.colorSwatch = colorSwatch
-        refreshContent()
-    }
+    weak var delegate: PastelDetailViewControllerDelegate?
 
-    private let item: Pastel
-    private let allPastels: [Pastel]
+    // MARK: - Update (called by the Edit form)
+
+    private var item: Pastel
+    private var allPastels: [Pastel]
 
     private let scrollView = UIScrollView()
     private let cardView = UIView()
@@ -145,7 +143,7 @@ class PastelDetailViewController: UIViewController, PastelEditViewControllerDele
 
     private func refreshContent() {
         nameLabel.text = item.color
-        idLabel.text = "No. \(item.id)"
+        idLabel.text = "No. \(item.colorID)"
         brandLabel.text = item.brand.rawValue
         dateAcquiredLabel.text = "Acquired \(item.dateAcquired.formatted(date: .abbreviated, time: .omitted))"
         rgbLabel.text = "RGB \(item.colorSwatch.0) · \(item.colorSwatch.1) · \(item.colorSwatch.2)"
@@ -156,5 +154,20 @@ class PastelDetailViewController: UIViewController, PastelEditViewControllerDele
         let editVC = PastelEditViewController(item: item, allPastels: allPastels)
         editVC.delegate = self
         present(UINavigationController(rootViewController: editVC), animated: true)
+    }
+    
+    func pastelSwatchEditDidSave(_ pastel: Pastel) {
+        item = pastel
+
+        if let index = allPastels.firstIndex(where: { $0.id == pastel.id }) {
+            allPastels[index] = pastel
+        } else {
+            allPastels.append(pastel)
+        }
+
+        refreshContent()
+
+        // Notify A (ListView) that the pastel changed.
+        delegate?.pastelDetailDidSave(pastel)
     }
 }

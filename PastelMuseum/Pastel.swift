@@ -8,17 +8,18 @@ enum PastelBrand: String, CaseIterable {
     case unknownBrand = "Unknown"
 }
 
-class Pastel {
+struct Pastel: Identifiable{
+    var id = UUID()
     var color: String
     var brand: PastelBrand
-    var id: Int
+    var colorID: Int
     var dateAcquired: Date
     var colorSwatch: (Int, Int, Int)
 
-    init(color: String = "None", brand: PastelBrand = .unknownBrand, id: Int = -1, dateAcquired: Date = Date(), colorSwatch: (Int, Int, Int) = (-1, -1, -1)) {
+    init(color: String = "None", brand: PastelBrand = .unknownBrand, colorID: Int = -1, dateAcquired: Date = Date(), colorSwatch: (Int, Int, Int) = (-1, -1, -1)) {
         self.color = color
         self.brand = brand
-        self.id = id
+        self.colorID = colorID
         self.dateAcquired = dateAcquired
         self.colorSwatch = colorSwatch
     }

@@ -4,7 +4,7 @@ class PastelTableCell: UITableViewCell {
     
     static let identifier = "PastelTableCell"
 
-    var item: Pastel = Pastel(color: "Default", brand: .unknownBrand, id: -1, dateAcquired: Date.now, colorSwatch: (-1, -1, -1))
+    var item: Pastel = Pastel(color: "Default", brand: .unknownBrand, colorID: -1, dateAcquired: Date.now, colorSwatch: (-1, -1, -1))
 
     private let cardView: UIView = {
         let view = UIView()
@@ -89,6 +89,6 @@ class PastelTableCell: UITableViewCell {
         self.item = item
         swatchView.backgroundColor = item.swatchUIColor
         pastelTitleLabel.text = item.color
-        pastelDescriptionLabel.text = "No. \(item.id)  ·  \(item.brand.rawValue)"
+        pastelDescriptionLabel.text = "No. \(item.colorID)  ·  \(item.brand.rawValue)"
     }
 }

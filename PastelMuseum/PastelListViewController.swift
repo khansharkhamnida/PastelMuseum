@@ -1,22 +1,16 @@
 import UIKit
 
-class PastelListViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, PastelEditViewControllerDelegate {
+
+class PastelListViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, PastelEditViewControllerDelegate, PastelDetailViewControllerDelegate{
+    
 
     private let tableView = UITableView()
     private let emptyLabel = UILabel()
 
     private var pastels: [Pastel] = [
-        Pastel(color: "Jazzberry Jam", brand: .mungyo, id: 276, colorSwatch: (198, 1, 49)),
-        Pastel(color: "Viridian Green", brand: .sennelier, id: 21, colorSwatch: (0, 103, 80))
+        Pastel(color: "Jazzberry Jam", brand: .mungyo, colorID: 276, colorSwatch: (198, 1, 49)),
+        Pastel(color: "Viridian Green", brand: .sennelier, colorID: 21, colorSwatch: (0, 103, 80))
     ]
-
-    // MARK: - Create (called by the Add form)
-    func pastelSwatchEditDidSave(color: String, brand: PastelBrand, id: Int, dateAcquired: Date, colorSwatch: (Int, Int, Int)) {
-        let pastel = Pastel(color: color, brand: brand, id: id, dateAcquired: dateAcquired, colorSwatch: colorSwatch)
-        pastels.append(pastel)
-        tableView.reloadData()
-        updateEmptyState()
-    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -96,6 +90,7 @@ class PastelListViewController: UIViewController, UITableViewDelegate, UITableVi
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let detailVC = PastelDetailViewController(item: pastels[indexPath.row], allPastels: pastels)
+        detailVC.delegate = self
         navigationController?.pushViewController(detailVC, animated: true)
     }
 
@@ -112,6 +107,27 @@ class PastelListViewController: UIViewController, UITableViewDelegate, UITableVi
         let addVC = PastelEditViewController(item: nil, allPastels: pastels)
         addVC.delegate = self
         present(UINavigationController(rootViewController: addVC), animated: true)
+    }
+    
+    private func upsertPastel(_ pastel: Pastel) {
+        if let index = pastels.firstIndex(where: { $0.id == pastel.id }) {
+            pastels[index] = pastel
+        } else {
+            pastels.append(pastel)
+        }
+
+        tableView.reloadData()
+        updateEmptyState()
+    }
+
+    // C → A: add or edit
+    func pastelSwatchEditDidSave(_ pastel: Pastel) {
+        upsertPastel(pastel)
+    }
+
+    // B → A: edit an existing pastel
+    func pastelDetailDidSave(_ pastel: Pastel) {
+        upsertPastel(pastel)
     }
 }
 
