@@ -13,6 +13,7 @@ class PastelEditViewController: UIViewController, UITableViewDelegate, UITableVi
     weak var delegate: PastelEditViewControllerDelegate?
 
     var item: Pastel?
+    private let allPastels: [Pastel]
 
     private enum Section: Int, CaseIterable {
         case swatch, details
@@ -62,8 +63,9 @@ class PastelEditViewController: UIViewController, UITableViewDelegate, UITableVi
         return cell
     }()
 
-    init(item: Pastel?) {
+    init(item: Pastel?, allPastels: [Pastel]) {
         self.item = item
+        self.allPastels = allPastels
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -104,7 +106,7 @@ class PastelEditViewController: UIViewController, UITableViewDelegate, UITableVi
         nameField.returnKeyType = .done
         nameField.delegate = self
         
-        idField.text = String(item?.id ?? PastelStore.shared.nextAvailableID)
+        idField.text = String(item?.id ?? ((allPastels.map(\.id).max() ?? 0) + 1))
         idField.placeholder = "e.g. 276"
         idField.textAlignment = .right
         idField.keyboardType = .numberPad
@@ -270,7 +272,7 @@ class PastelEditViewController: UIViewController, UITableViewDelegate, UITableVi
             return
         }
         
-        if PastelStore.shared.pastels.contains(where: { $0.id == id && $0 !== item }) {
+        if allPastels.contains(where: { $0.id == id && $0 !== item }) {
             let alert = UIAlertController(
                 title: "ID already in use",
                 message: "Another pastel is already numbered \(id). Pick a different number.",
