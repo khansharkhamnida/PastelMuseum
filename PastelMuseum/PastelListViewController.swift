@@ -109,25 +109,55 @@ class PastelListViewController: UIViewController,UITableViewDelegate, PastelEdit
         navigationController?.pushViewController(detailVC, animated: true)
     }
     
-    // MARK: - Delete
+    
     func tableView(
         _ tableView: UITableView,
-        commit editingStyle: UITableViewCell.EditingStyle,
-        forRowAt indexPath: IndexPath
-    ) {
-        guard editingStyle == .delete else { return }
+        trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
+    ) -> UISwipeActionsConfiguration? {
 
-        let snapshot = dataSource.snapshot()
-        let itemIDs = snapshot.itemIdentifiers(inSection: .main)
+        let deleteAction = UIContextualAction(
+            style: .destructive,
+            title: "Delete"
+        ) { [weak self] _, _, completionHandler in
 
-        guard itemIDs.indices.contains(indexPath.row) else { return }
+            guard let self = self else {
+                completionHandler(false)
+                return
+            }
 
-        let id = itemIDs[indexPath.row]
+            let itemIDs = self.dataSource.snapshot()
+                .itemIdentifiers(inSection: .main)
 
-        pastels.removeAll { $0.id == id }
+            guard itemIDs.indices.contains(indexPath.row) else {
+                completionHandler(false)
+                return
+            }
 
-        PastelDataStore.shared.savePastels(pastels)
-        applySnapshot()
+            let id = itemIDs[indexPath.row]
+
+            self.pastels.removeAll { $0.id == id }
+            PastelDataStore.shared.savePastels(self.pastels)
+
+            var snapshot = self.dataSource.snapshot()
+            snapshot.deleteItems([id])
+
+            self.dataSource.apply(
+                snapshot,
+                animatingDifferences: true
+            ) {
+                self.updateEmptyState()
+                completionHandler(true)
+            }
+        }
+
+        deleteAction.backgroundColor = .systemRed
+
+        let configuration = UISwipeActionsConfiguration(
+            actions: [deleteAction]
+        )
+        configuration.performsFirstActionWithFullSwipe = true
+
+        return configuration
     }
 
 
