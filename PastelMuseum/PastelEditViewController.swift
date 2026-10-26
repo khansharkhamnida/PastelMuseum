@@ -220,17 +220,23 @@ class PastelEditViewController: UIViewController, UITableViewDelegate, UITableVi
         brandButton.configuration?.title = selectedBrand.rawValue
     }
     
-    private func rgbTuple(from color: UIColor) -> (Int, Int, Int) {
+    private func rgbColor(from color: UIColor) -> RGBColor {
         var red: CGFloat = 0
         var green: CGFloat = 0
         var blue: CGFloat = 0
         var alpha: CGFloat = 0
+
         color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-        
+
         func to255(_ value: CGFloat) -> Int {
-            return min(max(Int((value * 255).rounded()), 0), 255)
+            min(max(Int((value * 255).rounded()), 0), 255)
         }
-        return (to255(red), to255(green), to255(blue))
+
+        return RGBColor(
+            red: to255(red),
+            green: to255(green),
+            blue: to255(blue)
+        )
     }
     
     private func flag(_ field: UITextField) {
@@ -289,7 +295,7 @@ class PastelEditViewController: UIViewController, UITableViewDelegate, UITableVi
             return
         }
 
-        let swatch = rgbTuple(
+        let swatch = rgbColor(
             from: colorWell.selectedColor ?? .systemGray4
         )
 

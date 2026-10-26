@@ -4,7 +4,7 @@ class PastelTableCell: UITableViewCell {
     
     static let identifier = "PastelTableCell"
 
-    var item: Pastel = Pastel(color: "Default", brand: .unknownBrand, colorID: -1, dateAcquired: Date.now, colorSwatch: (-1, -1, -1))
+    var item: Pastel = Pastel(color: "Default", brand: .unknownBrand, colorID: -1, dateAcquired: Date.now, colorSwatch: RGBColor(red: -1, green: -1, blue: -1))
 
     private let cardView: UIView = {
         let view = UIView()

@@ -1,6 +1,6 @@
 import UIKit
 
-enum PastelBrand: String, CaseIterable {
+enum PastelBrand: String, CaseIterable, Codable {
     case mungyo = "Mungyo Gallery"
     case sennelier = "Sennelier"
     case caranDAche = "Caran d’Ache (Neopastel)"
@@ -8,15 +8,15 @@ enum PastelBrand: String, CaseIterable {
     case unknownBrand = "Unknown"
 }
 
-struct Pastel: Identifiable{
+struct Pastel: Codable, Identifiable{
     var id = UUID()
     var color: String
     var brand: PastelBrand
     var colorID: Int
     var dateAcquired: Date
-    var colorSwatch: (Int, Int, Int)
+    var colorSwatch: RGBColor
 
-    init(color: String = "None", brand: PastelBrand = .unknownBrand, colorID: Int = -1, dateAcquired: Date = Date(), colorSwatch: (Int, Int, Int) = (-1, -1, -1)) {
+    init(color: String = "None", brand: PastelBrand = .unknownBrand, colorID: Int = -1, dateAcquired: Date = Date(), colorSwatch: RGBColor) {
         self.color = color
         self.brand = brand
         self.colorID = colorID
@@ -25,13 +25,18 @@ struct Pastel: Identifiable{
     }
 }
 
+struct RGBColor: Codable {
+    var red: Int
+    var green: Int
+    var blue: Int
+}
+
 extension Pastel {
     var swatchUIColor: UIColor {
         UIColor(
-            red: CGFloat(colorSwatch.0) / 255,
-            green: CGFloat(colorSwatch.1) / 255,
-            blue: CGFloat(colorSwatch.2) / 255,
-            alpha: 1
-        )
+            red: CGFloat(colorSwatch.red) / 255,
+            green: CGFloat(colorSwatch.green) / 255,
+            blue: CGFloat(colorSwatch.blue) / 255,
+            alpha: 1        )
     }
 }

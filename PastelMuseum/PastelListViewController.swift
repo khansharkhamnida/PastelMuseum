@@ -1,19 +1,22 @@
 import UIKit
 
 
-class PastelListViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, PastelEditViewControllerDelegate, PastelDetailViewControllerDelegate{
-    
+class PastelListViewController: UIViewController,UITableViewDelegate, PastelEditViewControllerDelegate, PastelDetailViewControllerDelegate{
 
+    private var dataSource:
+        UITableViewDiffableDataSource<PastelSection, UUID>!
+    
     private let tableView = UITableView()
     private let emptyLabel = UILabel()
 
-    private var pastels: [Pastel] = [
-        Pastel(color: "Jazzberry Jam", brand: .mungyo, colorID: 276, colorSwatch: (198, 1, 49)),
-        Pastel(color: "Viridian Green", brand: .sennelier, colorID: 21, colorSwatch: (0, 103, 80))
-    ]
+    private var pastels: [Pastel] = []
 
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        pastels = PastelDataStore.shared.loadPastels()
+        
         view.backgroundColor = .systemBrown
         title = "My Pastels"
 
@@ -26,13 +29,17 @@ class PastelListViewController: UIViewController, UITableViewDelegate, UITableVi
         )
 
         setupTableView()
+        applySnapshot()
     }
+
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        tableView.reloadData()   // picks up edits made on the detail screen
-        updateEmptyState()
+
+        pastels = PastelDataStore.shared.loadPastels()
+        applySnapshot()
     }
+
 
     private func setupTableView() {
         view.addSubview(tableView)
@@ -44,8 +51,19 @@ class PastelListViewController: UIViewController, UITableViewDelegate, UITableVi
             tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
         tableView.delegate = self
-        tableView.dataSource = self
-        tableView.register(PastelTableCell.self, forCellReuseIdentifier: PastelTableCell.identifier)
+        
+        tableView.register(
+            PastelTableCell.self,
+            forCellReuseIdentifier: PastelTableCell.identifier
+        )
+
+        dataSource = PastelTableDataSource.make(
+            for: tableView,
+            pastels: { [weak self] in
+                self?.pastels ?? []
+            }
+        )
+        
         tableView.tableFooterView = UIView()
         tableView.backgroundColor = .systemBrown
         tableView.separatorStyle = .none
@@ -66,25 +84,22 @@ class PastelListViewController: UIViewController, UITableViewDelegate, UITableVi
         ])
     }
 
+    private func applySnapshot() {
+        var snapshot =
+            NSDiffableDataSourceSnapshot<PastelSection, UUID>()
+
+        snapshot.appendSections([.main])
+        snapshot.appendItems(
+            pastels.map(\.id),
+            toSection: .main
+        )
+
+        dataSource.apply(snapshot, animatingDifferences: true)
+        updateEmptyState()
+    }
+    
     private func updateEmptyState() {
         emptyLabel.isHidden = !pastels.isEmpty
-    }
-
-    // MARK: - Table
-
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        pastels.count
-    }
-
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(
-            withIdentifier: PastelTableCell.identifier,
-            for: indexPath
-        ) as? PastelTableCell else {
-            return UITableViewCell()
-        }
-        cell.configure(with: pastels[indexPath.row])
-        return cell
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -93,36 +108,74 @@ class PastelListViewController: UIViewController, UITableViewDelegate, UITableVi
         detailVC.delegate = self
         navigationController?.pushViewController(detailVC, animated: true)
     }
-
+    
     // MARK: - Delete
-    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-            pastels.remove(at: indexPath.row)
-            tableView.deleteRows(at: [indexPath], with: .fade)
-            updateEmptyState()
+    func tableView(
+        _ tableView: UITableView,
+        commit editingStyle: UITableViewCell.EditingStyle,
+        forRowAt indexPath: IndexPath
+    ) {
+        guard editingStyle == .delete else { return }
+
+        let snapshot = dataSource.snapshot()
+        let itemIDs = snapshot.itemIdentifiers(inSection: .main)
+
+        guard itemIDs.indices.contains(indexPath.row) else { return }
+
+        let id = itemIDs[indexPath.row]
+
+        pastels.removeAll { $0.id == id }
+
+        PastelDataStore.shared.savePastels(pastels)
+        applySnapshot()
+    }
+
+
+    @objc private func addTapped() {
+        print("Add button tapped")
+
+        let addVC = PastelEditViewController(
+            item: nil,
+            allPastels: pastels
+        )
+        addVC.delegate = self
+
+        let navController = UINavigationController(
+            rootViewController: addVC
+        )
+
+        present(navController, animated: true) {
+            print("Add form presented")
         }
     }
 
-    @objc private func addTapped() {
-        let addVC = PastelEditViewController(item: nil, allPastels: pastels)
-        addVC.delegate = self
-        present(UINavigationController(rootViewController: addVC), animated: true)
-    }
-    
     private func upsertPastel(_ pastel: Pastel) {
+        guard let index = pastels.firstIndex(where: { $0.id == pastel.id }) else {
+            print("Could not find pastel to update: \(pastel.id)")
+            return
+        }
+
+        pastels[index] = pastel
+        PastelDataStore.shared.savePastels(pastels)
+
+        var snapshot = dataSource.snapshot()
+        snapshot.reconfigureItems([pastel.id])
+        dataSource.apply(snapshot, animatingDifferences: true)
+
+        updateEmptyState()
+    }
+
+
+    // C → A: add or edit
+    func pastelSwatchEditDidSave(_ pastel: Pastel) {
         if let index = pastels.firstIndex(where: { $0.id == pastel.id }) {
             pastels[index] = pastel
         } else {
             pastels.append(pastel)
         }
 
-        tableView.reloadData()
-        updateEmptyState()
-    }
-
-    // C → A: add or edit
-    func pastelSwatchEditDidSave(_ pastel: Pastel) {
-        upsertPastel(pastel)
+        PastelDataStore.shared.savePastels(pastels)
+        applySnapshot()
     }
 
     // B → A: edit an existing pastel

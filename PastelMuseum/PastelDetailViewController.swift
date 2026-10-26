@@ -146,7 +146,7 @@ class PastelDetailViewController: UIViewController, PastelEditViewControllerDele
         idLabel.text = "No. \(item.colorID)"
         brandLabel.text = item.brand.rawValue
         dateAcquiredLabel.text = "Acquired \(item.dateAcquired.formatted(date: .abbreviated, time: .omitted))"
-        rgbLabel.text = "RGB \(item.colorSwatch.0) · \(item.colorSwatch.1) · \(item.colorSwatch.2)"
+        rgbLabel.text = "RGB \(item.colorSwatch.red) · \(item.colorSwatch.green) · \(item.colorSwatch.blue)"
         swatchView.backgroundColor = item.swatchUIColor
     }
 
@@ -158,16 +158,8 @@ class PastelDetailViewController: UIViewController, PastelEditViewControllerDele
     
     func pastelSwatchEditDidSave(_ pastel: Pastel) {
         item = pastel
-
-        if let index = allPastels.firstIndex(where: { $0.id == pastel.id }) {
-            allPastels[index] = pastel
-        } else {
-            allPastels.append(pastel)
-        }
-
         refreshContent()
 
-        // Notify A (ListView) that the pastel changed.
         delegate?.pastelDetailDidSave(pastel)
     }
 }
